@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <title>PDSU_ACM代码写入工具 by Herobrine1224 版本:v2.0.2</title>
+</head>
+<style>
+    *{
+        margin: 0;
+        padding: 0;
+    }
+    html,body{
+        height: 100%;
+        width: 100%;
+        min-width: 778px;
+        min-height: 544px;
+    }
+    .up{
+        box-sizing: border-box;
+        border-style: solid;
+        border-color: black;
+        border-width: 0 0 0 0;
+        width: 100%;
+        height: 20%;
+        /*background-color: lightcoral;*/
+    }
+    p{
+        text-align: center;
+    }
+    .usage-method{
+        font-size: 125%;
+        font-weight: bold;
+    }
+    .mid{
+        box-sizing: border-box;
+        border-style: solid;
+        border-color: black;
+        border-width: 1px 0 1px 0;
+        width: 100%;
+        height: 65%;
+        display: flex;
+        /*background-color: lightskyblue;*/
+    }
+    .mid-left{
+        box-sizing: border-box;
+        border-style: solid;
+        border-color: black;
+        border-width: 0 0 0 0;
+        padding: 0.5% 0.5% 0.5% 0.5%;
+        width: 79%;
+        height: 99%;
+    }
+    .texts-input{
+        width: 100%;
+        height: 100%;
+        resize: none;
+        border: none;
+        font-size: 110%;
+        font-family: 'Consolas','Monaco' ,'Courier New',monospace;
+        color: lightcoral;
+    }
+    .texts-input:focus {
+        outline: none;
+    }
+    .mid-right{
+        box-sizing: border-box;
+        border-style: solid;
+        border-color: black;
+        border-width: 0 0 0 1px;
+        width: 20%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center; /* 垂直居中 */
+    }
+    .mid-right button{
+        box-sizing: border-box;
+        margin: 2%;
+        width: 80%;
+        height: 20%;
+        font-size: 120%;
+        font-weight: bold;
+    }
+    .down{
+        box-sizing: border-box;
+        border-style: solid;
+        border-color: black;
+        border-width: 0 0 0 0;
+        width: 100%;
+        height: 15%;
+        justify-content: center;
+        /*background-color: lightgreen;*/
+    }
+    .now{
+        font-size: 120%;
+        font-weight: bold;
+        margin-bottom: 1%;
+    }
+</style>
+<body>
+    <div class="up">
+        <p class="usage-method">使用方法</p>
+        <p>打开网站代码提交界面,选择语言类型(C/C++/JAVA)</p>
+        <p>将要写入的代码粘贴到下方文本输入框，按下确认键，回到网站界面</p>
+        <p>鼠标选中网站代码输入框，按下键盘Ctrl+Alt+Space按键，等待写入完成</p>
+    </div>
+    <div class="mid">
+        <div class="mid-left">
+            <label>
+                 <textarea
+                         class="texts-input"
+                         id="name"
+                         rows="1"
+                         cols="30"
+                         placeholder="输入或粘贴代码..."
+                         spellcheck="false"
+                         autocomplete="off"
+                         autocapitalize="off"
+                 ></textarea>
+            </label>
+        </div>
+        <div class="mid-right">
+            <button class="sure" onclick="getTexts()">确认</button>
+            <button class="paste" onclick="pasteTexts()">粘贴</button>
+            <button class="clear" onclick="clearTexts()">清空</button>
+        </div>
+    </div>
+    <div class="down">
+        <p class="now">当前没有代码，请先输入或粘贴代码</p>
+        <p>在代码开始写入直至完全写入之前，请勿切换到其他任何界面，否则出现任何问题，后果自负</p>
+    </div>
+<script>
+    // 调用 Python 后端函数
+    async function getTexts() {
+        const texts = document.getElementById('name').value.trimEnd();
+        if (!texts) {
+            const now = document.querySelector('.now');
+            now.textContent = '请先输入或粘贴代码，当前代码为空';
+            return;
+        }
+        try {
+            const result = await pywebview.api.get_texts(texts);
+            const now = document.querySelector('.now');
+            if (result.status === "success") {
+                now.textContent = '当前可以写入，请前往网站页面';
+            } else {
+                now.textContent = '保存失败: ' + result.message;
+            }
+        } catch (error) {
+            console.error("调用 get_texts 失败:", error);
+            const now = document.querySelector('.now');
+            now.textContent = '保存失败，请重试';
+        }
+    }
+    async function pasteTexts() {
+        try {
+            const result = await pywebview.api.read_clipboard();
+            if (result.status === "success") {
+                document.getElementById('name').value = result.text;
+                const now = document.querySelector('.now');
+                now.textContent = '当前已粘贴代码，请点击确认';
+            } else if(result.status === "warring"){
+                const now = document.querySelector('.now');
+                now.textContent = '当前粘贴板内容不是文本或为空文本，请先复制非空文本代码';
+            } else {
+                alert(result.message);
+            }
+        } catch (error) {
+            console.error("读取剪贴板失败:", error);
+            alert("读取剪贴板失败");
+        }
+    }
+    async function clearTexts() {
+        try {
+            const result = await pywebview.api.clear_texts();
+            document.getElementById('name').value = "";
+            const now = document.querySelector('.now');
+            now.textContent = result.message || '代码已清空，当前无法写入';
+        } catch (error) {
+            console.error("清空失败:", error);
+        }
+    }
+</script>
+</body>
+</html>
